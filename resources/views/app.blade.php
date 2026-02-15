@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>ProCook - Quality Cookware & Recipes</title>
+    <title>ProCook - Recipe Manager</title>
     @viteReactRefresh
-    @vite(['resources/js/app.jsx'])
+    @vite(['resources/css/app.css', 'resources/js/app.jsx'])
 </head>
-<body>
-    <div id="root"></div>
+<body class="bg-gray-50">
+    <div id="app"></div>
 </body>
 </html>
