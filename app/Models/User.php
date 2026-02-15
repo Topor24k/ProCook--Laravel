@@ -49,4 +49,30 @@ class User extends Authenticatable
     {
         return $this->hasMany(Recipe::class);
     }
+
+    /**
+     * Get the comments for the user.
+     */
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    /**
+     * Get the ratings for the user.
+     */
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class);
+    }
+
+    /**
+     * Get the recipes saved by the user.
+     */
+    public function savedRecipes()
+    {
+        return $this->belongsToMany(Recipe::class, 'saved_recipes')
+            ->withTimestamps()
+            ->orderBy('saved_recipes.created_at', 'desc');
+    }
 }

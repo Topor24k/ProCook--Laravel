@@ -17,17 +17,25 @@ return [
 
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 
-    'allowed_origins' => ['http://localhost:5173'],
+    'allowed_origins' => [
+        'http://localhost:5173',
+        'http://localhost:8000',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:8000',
+        // Production URLs - Update these with your actual deployment URLs
+        'https://your-frontend-app.vercel.app',
+        'https://*.vercel.app',
+    ],
 
     'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],
 
-    'exposed_headers' => [],
+    'exposed_headers' => ['X-RateLimit-Limit', 'X-RateLimit-Remaining'],
 
-    'max_age' => 0,
+    'max_age' => 86400, // 24 hours
 
     'supports_credentials' => true,
 
