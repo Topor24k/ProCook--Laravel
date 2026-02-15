@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import ImageCropper from '../components/ImageCropper';
 import {
     IoCreateOutline,
     IoAddCircleOutline,
@@ -9,7 +10,9 @@ import {
     IoArrowBackOutline,
     IoCheckmarkCircleOutline,
     IoRestaurantOutline,
-    IoTimeOutline
+    IoTimeOutline,
+    IoImageOutline,
+    IoCloseCircleOutline
 } from 'react-icons/io5';
 
 export default function RecipeCreate() {
@@ -26,6 +29,11 @@ export default function RecipeCreate() {
         preparation_notes: '',
         ingredients: [{ name: '', measurement: '', substitution_option: '', allergen_info: '' }]
     });
+    const [image, setImage] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
+    const [showCropper, setShowCropper] = useState(false);
+    const [imageToCrop, setImageToCrop] = useState(null);
+    const [originalFileName, setOriginalFileName] = useState('');
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
 
@@ -38,7 +46,27 @@ export default function RecipeCreate() {
         e.preventDefault();
         setLoading(true);
         try {
-            await api.post('/recipes', formData);
+            const formDataToSend = new FormData();
+            
+            // Append all form fields
+            Object.keys(formData).forEach(key => {
+                if (key === 'ingredients') {
+                    formDataToSend.append(key, JSON.stringify(formData[key]));
+                } else {
+                    formDataToSend.append(key, formData[key]);
+                }
+            });
+            
+            // Append image if exists
+            if (image) {
+                formDataToSend.append('image', image);
+            }
+            
+            await api.post('/recipes', formDataToSend, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
             navigate('/recipes/my-recipes');
         } catch (error) {
             setErrors(error.response?.data?.errors || {});
@@ -59,6 +87,65 @@ export default function RecipeCreate() {
         setFormData({ ...formData, ingredients: newIngredients });
     };
 
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5242880) { // 5MB in bytes
+                setErrors({ ...errors, image: ['Image size cannot exceed 5MB.'] });
+                return;
+            }
+            
+            setOriginalFileName(file.name);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImageToCrop(reader.result);
+                setShowCropper(true);
+            };
+            reader.readAsDataURL(file);
+            
+            // Clear image error if exists
+            if (errors.image) {
+                const newErrors = { ...errors };
+                delete newErrors.image;
+                setErrors(newErrors);
+            }
+        }
+    };
+
+    const handleCropComplete = (croppedBlob) => {
+        // Convert blob to file
+        const croppedFile = new File([croppedBlob], originalFileName || 'recipe-image.jpg', {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+        });
+        
+        setImage(croppedFile);
+        
+        // Create preview URL from blob
+        const previewUrl = URL.createObjectURL(croppedBlob);
+        setImagePreview(previewUrl);
+        
+        setShowCropper(false);
+        setImageToCrop(null);
+    };
+
+    const handleCropCancel = () => {
+        setShowCropper(false);
+        setImageToCrop(null);
+        // Clear the file input
+        const fileInput = document.getElementById('recipe-image');
+        if (fileInput) fileInput.value = '';
+    };
+
+    const removeImage = () => {
+        setImage(null);
+        setImagePreview(null);
+        setImageToCrop(null);
+        // Clear the file input
+        const fileInput = document.getElementById('recipe-image');
+        if (fileInput) fileInput.value = '';
+    };
+
     return (
         <div className="form-page" style={{ alignItems: 'flex-start', paddingTop: 'var(--space-2xl)' }}>
             <div className="form-container wide">
@@ -77,7 +164,7 @@ export default function RecipeCreate() {
                             className="form-input"
                             value={formData.title}
                             onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                            placeholder="e.g., Classic Italian Pasta Carbonara"
+                            placeholder="e.g., Chicken Adobo"
                             required
                         />
                         {errors.title && <div className="error-message">{errors.title[0]}</div>}
@@ -89,10 +176,46 @@ export default function RecipeCreate() {
                             className="form-textarea"
                             value={formData.short_description}
                             onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
-                            placeholder="A brief description of your recipe..."
+                            placeholder="A savory and tangy dish that's perfect for family meals..."
                             rows="3"
                             required
                         />
+                    </div>
+
+                    {/* Image Upload Section */}
+                    <div className="form-group">
+                        <label className="form-label">
+                            <IoImageOutline style={{ fontSize: '1.1rem', marginRight: '0.5rem', verticalAlign: 'middle' }} />
+                            Recipe Image
+                        </label>
+                        <div className="image-upload-container">
+                            {!imagePreview ? (
+                                <label htmlFor="recipe-image" className="image-upload-label">
+                                    <IoImageOutline style={{ fontSize: '3rem', color: 'var(--gray-400)' }} />
+                                    <span style={{ marginTop: '0.5rem', color: 'var(--gray-600)' }}>Click to upload recipe image</span>
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--gray-500)' }}>PNG, JPG, GIF, WEBP up to 5MB</span>
+                                </label>
+                            ) : (
+                                <div className="image-preview-container">
+                                    <img src={imagePreview} alt="Recipe preview" className="image-preview" />
+                                    <button 
+                                        type="button" 
+                                        onClick={removeImage}
+                                        className="image-remove-btn"
+                                    >
+                                        <IoCloseCircleOutline />
+                                    </button>
+                                </div>
+                            )}
+                            <input
+                                id="recipe-image"
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                                style={{ display: 'none' }}
+                            />
+                        </div>
+                        {errors.image && <div className="error-message">{errors.image[0]}</div>}
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-lg)' }}>
@@ -103,7 +226,7 @@ export default function RecipeCreate() {
                                 className="form-input"
                                 value={formData.cuisine_type}
                                 onChange={(e) => setFormData({ ...formData, cuisine_type: e.target.value })}
-                                placeholder="e.g., Italian"
+                                placeholder="e.g., Filipino"
                                 required
                             />
                         </div>
@@ -114,7 +237,7 @@ export default function RecipeCreate() {
                                 className="form-input"
                                 value={formData.category}
                                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                placeholder="e.g., Main Course"
+                                placeholder="e.g., Ulam (Main Dish)"
                                 required
                             />
                         </div>
@@ -225,7 +348,7 @@ export default function RecipeCreate() {
                                                 newIngredients[index].name = e.target.value;
                                                 setFormData({ ...formData, ingredients: newIngredients });
                                             }}
-                                            placeholder="e.g., Olive Oil"
+                                            placeholder="e.g., Soy Sauce (Toyo)"
                                             required
                                         />
                                     </div>
@@ -240,7 +363,7 @@ export default function RecipeCreate() {
                                                 newIngredients[index].measurement = e.target.value;
                                                 setFormData({ ...formData, ingredients: newIngredients });
                                             }}
-                                            placeholder="e.g., 2 tbsp"
+                                            placeholder="e.g., 1/2 cup"
                                             required
                                         />
                                     </div>
@@ -266,29 +389,41 @@ export default function RecipeCreate() {
                             value={formData.preparation_notes}
                             onChange={(e) => setFormData({ ...formData, preparation_notes: e.target.value })}
                             rows="12"
-                            placeholder="Step-by-step instructions for preparing this recipe..."
+                            placeholder="Step-by-step instructions (e.g., 1. Marinate chicken with toyo and suka for 30 minutes. 2. Sauté garlic in hot oil until golden brown...)"
                             style={{ minHeight: '250px' }}
                         />
                     </div>
 
                     {/* Action Buttons */}
-                    <div style={{ display: 'flex', gap: 'var(--space-md)', marginTop: 'var(--space-xl)' }}>
-                        <button type="submit" className="form-button" disabled={loading} style={{ flex: 1 }}>
-                            <IoCheckmarkCircleOutline style={{ fontSize: '1.3rem' }} />
-                            {loading ? 'Publishing...' : 'Publish Recipe'}
-                        </button>
+                    <div className="form-actions">
                         <button 
                             type="button" 
                             onClick={() => navigate('/recipes')} 
-                            className="btn-secondary"
-                            style={{ flex: 1 }}
+                            className="btn-form-cancel"
                         >
-                            <IoArrowBackOutline style={{ fontSize: '1.2rem' }} />
-                            Cancel
+                            <IoArrowBackOutline />
+                            <span>Cancel</span>
+                        </button>
+                        <button 
+                            type="submit" 
+                            className="btn-form-submit" 
+                            disabled={loading}
+                        >
+                            <IoCheckmarkCircleOutline />
+                            <span>{loading ? 'Publishing...' : 'Publish Recipe'}</span>
                         </button>
                     </div>
                 </form>
             </div>
+
+            {/* Image Cropper Modal */}
+            {showCropper && imageToCrop && (
+                <ImageCropper
+                    image={imageToCrop}
+                    onCropComplete={handleCropComplete}
+                    onCancel={handleCropCancel}
+                />
+            )}
         </div>
     );
 }

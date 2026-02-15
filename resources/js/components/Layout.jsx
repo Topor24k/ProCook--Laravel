@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -11,19 +11,28 @@ import {
     IoPersonAddOutline,
     IoPersonOutline,
     IoHeartOutline,
+    IoBookmarkOutline,
     IoMailOutline,
     IoLogoFacebook,
     IoLogoTwitter,
-    IoLogoInstagram
+    IoLogoInstagram,
+    IoChevronDownOutline,
+    IoInformationCircleOutline,
+    IoDocumentTextOutline,
+    IoShieldCheckmarkOutline,
+    IoHelpCircleOutline
 } from 'react-icons/io5';
 
 export default function Layout() {
     const { user, logout, isAuthenticated } = useAuth();
     const navigate = useNavigate();
+    const [contactDropdownOpen, setContactDropdownOpen] = useState(false);
+    const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
     const handleLogout = async () => {
         await logout();
         navigate('/');
+        setUserDropdownOpen(false);
     };
 
     return (
@@ -38,36 +47,78 @@ export default function Layout() {
 
                     <nav className="main-nav">
                         <Link to="/" className="nav-link">
-                            <IoHomeOutline style={{ fontSize: '1.2rem' }} /> Home
+                            <IoHomeOutline style={{ fontSize: '1.2rem' }} />
+                            <span>Home</span>
                         </Link>
                         <Link to="/recipes" className="nav-link">
-                            <IoBookOutline style={{ fontSize: '1.2rem' }} /> Recipes
+                            <IoBookOutline style={{ fontSize: '1.2rem' }} />
+                            <span>Recipes</span>
                         </Link>
+                        <Link to="/about" className="nav-link">
+                            <IoInformationCircleOutline style={{ fontSize: '1.2rem' }} />
+                            <span>About Us</span>
+                        </Link>
+                        <div 
+                            className="nav-dropdown"
+                            onMouseEnter={() => setContactDropdownOpen(true)}
+                            onMouseLeave={() => setContactDropdownOpen(false)}
+                        >
+                            <button className="nav-link dropdown-toggle">
+                                <IoMailOutline style={{ fontSize: '1.2rem' }} />
+                                <span>Contact</span>
+                                <IoChevronDownOutline style={{ fontSize: '0.9rem' }} />
+                            </button>
+                            {contactDropdownOpen && (
+                                <div className="dropdown-menu">
+                                    <a href="#terms" className="dropdown-item">
+                                        <IoDocumentTextOutline /> Terms of Service
+                                    </a>
+                                    <a href="#privacy" className="dropdown-item">
+                                        <IoShieldCheckmarkOutline /> Privacy Policy
+                                    </a>
+                                    <a href="#help" className="dropdown-item">
+                                        <IoHelpCircleOutline /> Help Center
+                                    </a>
+                                </div>
+                            )}
+                        </div>
                         {isAuthenticated && (
                             <Link to="/recipes/my-recipes" className="nav-link">
-                                <IoHeartOutline style={{ fontSize: '1.2rem' }} /> My Recipes
+                                <IoHeartOutline style={{ fontSize: '1.2rem' }} />
+                                <span>My Recipes</span>
                             </Link>
                         )}
                     </nav>
 
                     <div className="auth-actions">
                         {isAuthenticated ? (
-                            <>
-                                <Link to="/recipes/create" className="btn-primary">
-                                    <IoAddCircleOutline style={{ fontSize: '1.2rem' }} />
-                                    <span>Create Recipe</span>
-                                </Link>
-                                <div className="user-menu">
-                                    <span className="user-name">
-                                        <IoPersonOutline style={{ fontSize: '1.1rem', marginRight: '0.25rem' }} />
-                                        {user?.name}
-                                    </span>
-                                    <button onClick={handleLogout} className="btn-secondary">
-                                        <IoLogOutOutline style={{ fontSize: '1.1rem' }} />
-                                        Logout
-                                    </button>
-                                </div>
-                            </>
+                            <div 
+                                className="user-dropdown"
+                                onMouseEnter={() => setUserDropdownOpen(true)}
+                                onMouseLeave={() => setUserDropdownOpen(false)}
+                            >
+                                <button className="user-button">
+                                    <IoPersonOutline style={{ fontSize: '1.1rem', marginRight: '0.25rem' }} />
+                                    {user?.name}
+                                    <IoChevronDownOutline style={{ fontSize: '0.9rem', marginLeft: '0.25rem' }} />
+                                </button>
+                                {userDropdownOpen && (
+                                    <div className="dropdown-menu user-menu-dropdown">
+                                        <Link to="/recipes/my-recipes" className="dropdown-item" onClick={() => setUserDropdownOpen(false)}>
+                                            <IoHeartOutline /> My Recipes
+                                        </Link>
+                                        <Link to="/recipes/saved" className="dropdown-item" onClick={() => setUserDropdownOpen(false)}>
+                                            <IoBookmarkOutline /> Saved Recipes
+                                        </Link>
+                                        <Link to="/recipes/create" className="dropdown-item" onClick={() => setUserDropdownOpen(false)}>
+                                            <IoAddCircleOutline /> Create Recipe
+                                        </Link>
+                                        <button onClick={handleLogout} className="dropdown-item logout-item">
+                                            <IoLogOutOutline /> Logout
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         ) : (
                             <>
                                 <Link to="/login" className="btn-secondary">
@@ -120,7 +171,7 @@ export default function Layout() {
                     </div>
                     <div className="footer-section">
                         <h4>Community</h4>
-                        <a href="#">About Us</a>
+                        <Link to="/about">About Us</Link>
                         <a href="#">Contact</a>
                         <a href="#">Terms of Service</a>
                         <a href="#">Privacy Policy</a>

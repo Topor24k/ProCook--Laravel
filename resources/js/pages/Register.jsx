@@ -6,7 +6,8 @@ import {
     IoMailOutline, 
     IoLockClosedOutline, 
     IoPersonAddOutline,
-    IoRestaurantOutline 
+    IoRestaurantOutline,
+    IoCheckmarkCircleOutline
 } from 'react-icons/io5';
 
 export default function Register() {
@@ -20,15 +21,22 @@ export default function Register() {
     });
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrors({});
         setLoading(true);
+        setSuccess(false);
 
         try {
             await register(formData.name, formData.email, formData.password, formData.password_confirmation);
-            navigate('/');
+            setSuccess(true);
+            
+            // Show success message for 2 seconds before redirecting
+            setTimeout(() => {
+                navigate('/');
+            }, 2000);
         } catch (err) {
             setErrors(err.response?.data?.errors || { error: ['Registration failed'] });
         } finally {
@@ -44,6 +52,16 @@ export default function Register() {
                     <h1 className="form-title">Join ProCook</h1>
                     <p className="form-subtitle">Create your account and start cooking</p>
                 </div>
+
+                {success && (
+                    <div className="success-message">
+                        <IoCheckmarkCircleOutline style={{ fontSize: '1.5rem', marginRight: '0.5rem' }} />
+                        <div>
+                            <strong>Account Created Successfully!</strong>
+                            <p style={{ marginTop: '0.25rem', fontSize: '0.9rem' }}>Welcome to ProCook! Redirecting you to home...</p>
+                        </div>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">

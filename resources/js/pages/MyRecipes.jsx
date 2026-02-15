@@ -28,7 +28,7 @@ export default function MyRecipes() {
 
     const fetchMyRecipes = async () => {
         try {
-            const response = await api.get('/recipes/my-recipes');
+            const response = await api.get('/my-recipes');
             setRecipes(response.data.data || response.data);
         } catch (error) {
             console.error('Error:', error);

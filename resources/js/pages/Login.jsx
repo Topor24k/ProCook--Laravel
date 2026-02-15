@@ -6,7 +6,8 @@ import {
     IoLockClosedOutline, 
     IoLogInOutline,
     IoRestaurantOutline,
-    IoAlertCircleOutline 
+    IoAlertCircleOutline,
+    IoCheckmarkCircleOutline
 } from 'react-icons/io5';
 
 export default function Login() {
@@ -16,15 +17,22 @@ export default function Login() {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [success, setSuccess] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
+        setSuccess(false);
 
         try {
             await login(email, password);
-            navigate('/');
+            setSuccess(true);
+            
+            // Show success message briefly before redirecting
+            setTimeout(() => {
+                navigate('/');
+            }, 1500);
         } catch (err) {
             setError(err.response?.data?.message || 'Invalid credentials');
         } finally {
@@ -40,6 +48,16 @@ export default function Login() {
                     <h1 className="form-title">Welcome Back</h1>
                     <p className="form-subtitle">Please login to your account</p>
                 </div>
+
+                {success && (
+                    <div className="success-message">
+                        <IoCheckmarkCircleOutline style={{ fontSize: '1.5rem', marginRight: '0.5rem' }} />
+                        <div>
+                            <strong>Login Successful!</strong>
+                            <p style={{ marginTop: '0.25rem', fontSize: '0.9rem' }}>Welcome back! Redirecting you...</p>
+                        </div>
+                    </div>
+                )}
 
                 {error && (
                     <div style={{ 

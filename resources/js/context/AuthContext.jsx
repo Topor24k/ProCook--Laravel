@@ -18,9 +18,17 @@ export function AuthProvider({ children }) {
     const checkAuth = async () => {
         try {
             const response = await api.get('/user');
-            setUser(response.data);
+            // Handle new API response format with success/data wrapper
+            setUser(response.data.data || response.data);
         } catch (error) {
-            setUser(null);
+            // 401 is expected when user is not authenticated - handle silently
+            if (error.response?.status === 401) {
+                setUser(null);
+            } else {
+                // Log unexpected errors
+                console.error('Auth check failed:', error);
+                setUser(null);
+            }
         } finally {
             setLoading(false);
         }

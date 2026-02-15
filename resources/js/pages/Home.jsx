@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import RatingStars from '../components/RatingStars';
+import SaveButton from '../components/SaveButton';
 import {
     IoBookOutline,
     IoCreateOutline,
@@ -27,7 +29,8 @@ export default function Home() {
     const fetchRecipes = async () => {
         try {
             const response = await api.get('/recipes?limit=6');
-            setRecipes(response.data);
+            // Handle new API response format with success/data wrapper
+            setRecipes(response.data.data || response.data);
         } catch (error) {
             console.error('Error fetching recipes:', error);
         } finally {
@@ -137,13 +140,28 @@ export default function Home() {
                                 className="recipe-card"
                             >
                                 <div className="recipe-image">
+                                    {recipe.image ? (
+                                        <img 
+                                            src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/storage/${recipe.image}`} 
+                                            alt={recipe.title}
+                                            onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                e.target.parentElement.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                                            }}
+                                        />
+                                    ) : null}
                                     <div className="recipe-badge">{recipe.cuisine_type}</div>
                                     <div className="recipe-overlay">
                                         <span className="view-recipe">View Recipe</span>
                                     </div>
                                 </div>
                                 <div className="recipe-content">
-                                    <h3 className="recipe-title">{recipe.title}</h3>
+                                    <div className="recipe-card-header">
+                                        <h3 className="recipe-title">{recipe.title}</h3>
+                                        <div onClick={(e) => e.preventDefault()} className="recipe-card-save">
+                                            <SaveButton recipeId={recipe.id} size="small" showLabel={false} />
+                                        </div>
+                                    </div>
                                     <p className="recipe-description">
                                         {recipe.short_description?.substring(0, 100)}
                                         {recipe.short_description?.length > 100 && '...'}
@@ -159,10 +177,13 @@ export default function Home() {
                                         </span>
                                     </div>
                                     <div className="recipe-footer">
-                                        <span className="recipe-author">
+                                        <div className="recipe-author">
                                             <IoPersonOutline style={{ fontSize: '1.1rem' }} />
                                             {recipe.user?.name || 'Anonymous'}
-                                        </span>
+                                        </div>
+                                        <div className="recipe-card-rating">
+                                            <RatingStars recipeId={recipe.id} size="small" showCount={false} interactive={false} />
+                                        </div>
                                     </div>
                                 </div>
                             </Link>

@@ -1,31 +1,35 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import RatingStars from '../components/RatingStars';
 import SaveButton from '../components/SaveButton';
 import {
-    IoTimeOutline,
+    IoBookmarkOutline,
+    IoBookOutline,
     IoRestaurantOutline,
+    IoTimeOutline,
     IoPersonOutline,
-    IoSearchOutline,
-    IoFilterOutline,
-    IoAddCircleOutline,
-    IoGridOutline
+    IoHeartOutline
 } from 'react-icons/io5';
 
-export default function Recipes() {
+export default function SavedRecipes() {
+    const { user } = useAuth();
+    const navigate = useNavigate();
     const [recipes, setRecipes] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterCuisine, setFilterCuisine] = useState('');
 
     useEffect(() => {
-        fetchRecipes();
-    }, []);
+        if (!user) {
+            navigate('/login');
+            return;
+        }
+        fetchSavedRecipes();
+    }, [user]);
 
-    const fetchRecipes = async () => {
+    const fetchSavedRecipes = async () => {
         try {
-            const response = await api.get('/recipes');
+            const response = await api.get('/saved-recipes');
             setRecipes(response.data.data || response.data);
         } catch (error) {
             console.error('Error:', error);
@@ -34,21 +38,16 @@ export default function Recipes() {
         }
     };
 
-    const cuisineTypes = [...new Set(recipes.map(r => r.cuisine_type))].filter(Boolean);
-
-    const filteredRecipes = recipes.filter(recipe => {
-        const matchesSearch = recipe.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             recipe.short_description?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCuisine = !filterCuisine || recipe.cuisine_type === filterCuisine;
-        return matchesSearch && matchesCuisine;
-    });
+    const handleRemoveSaved = (recipeId) => {
+        setRecipes(recipes.filter(recipe => recipe.id !== recipeId));
+    };
 
     if (loading) {
         return (
             <div className="recipes-page container">
                 <div className="loading-state">
                     <div className="spinner"></div>
-                    <p>Loading recipes...</p>
+                    <p>Loading saved recipes...</p>
                 </div>
             </div>
         );
@@ -56,85 +55,33 @@ export default function Recipes() {
 
     return (
         <div className="recipes-page container">
-            {/* Page Header */}
             <div className="page-header">
                 <h1 className="page-title">
-                    <IoGridOutline style={{ fontSize: '3rem', marginRight: '1rem', verticalAlign: 'middle', color: 'var(--primary)' }} />
-                    Recipe Collection
+                    <IoBookmarkOutline style={{ fontSize: '3rem', marginRight: '1rem', verticalAlign: 'middle', color: 'var(--primary)' }} />
+                    Saved Recipes
                 </h1>
                 <p className="page-subtitle">
-                    Discover delicious recipes from our community of passionate cooks
+                    Your collection of favorite recipes from the community
                 </p>
-                <Link to="/recipes/create" className="btn-primary" style={{ marginTop: '1.5rem' }}>
-                    <IoAddCircleOutline style={{ fontSize: '1.3rem' }} />
-                    Share Your Recipe
-                </Link>
             </div>
 
-            {/* Search & Filter Bar */}
-            <div className="search-filter-bar">
-                <div style={{ position: 'relative', flex: 1, minWidth: '250px' }}>
-                    <IoSearchOutline style={{
-                        position: 'absolute',
-                        left: '1rem',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        fontSize: '1.3rem',
-                        color: 'var(--gray-500)',
-                        pointerEvents: 'none'
-                    }} />
-                    <input
-                        type="text"
-                        className="search-input"
-                        placeholder="Search recipes..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ paddingLeft: '3rem' }}
-                    />
-                </div>
-                
-                <div style={{ position: 'relative' }}>
-                    <IoFilterOutline style={{
-                        position: 'absolute',
-                        left: '1rem',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        fontSize: '1.2rem',
-                        color: 'var(--gray-500)',
-                        pointerEvents: 'none'
-                    }} />
-                    <select
-                        className="filter-select"
-                        value={filterCuisine}
-                        onChange={(e) => setFilterCuisine(e.target.value)}
-                        style={{ paddingLeft: '3rem', minWidth: '200px' }}
-                    >
-                        <option value="">All Cuisines</option>
-                        {cuisineTypes.map(cuisine => (
-                            <option key={cuisine} value={cuisine}>{cuisine}</option>
-                        ))}
-                    </select>
-                </div>
-
-                <div style={{ fontSize: '0.9rem', color: 'var(--gray-600)', fontWeight: '500', whiteSpace: 'nowrap' }}>
-                    {filteredRecipes.length} recipe{filteredRecipes.length !== 1 ? 's' : ''} found
-                </div>
-            </div>
-
-            {/* Recipes Grid */}
-            {filteredRecipes.length === 0 ? (
+            {recipes.length === 0 ? (
                 <div className="empty-state">
                     <div className="empty-state-icon">
-                        <IoRestaurantOutline />
+                        <IoBookOutline />
                     </div>
-                    <h3 className="empty-state-title">No Recipes Found</h3>
+                    <h3 className="empty-state-title">No Saved Recipes</h3>
                     <p className="empty-state-description">
-                        Try adjusting your search or filters to find what you're looking for.
+                        Start exploring recipes and save your favorites to access them easily!
                     </p>
+                    <Link to="/recipes" className="btn-primary">
+                        <IoHeartOutline style={{ fontSize: '1.3rem' }} />
+                        Browse Recipes
+                    </Link>
                 </div>
             ) : (
                 <div className="recipes-grid">
-                    {filteredRecipes.map(recipe => (
+                    {recipes.map(recipe => (
                         <Link 
                             key={recipe.id} 
                             to={`/recipes/${recipe.id}`} 
@@ -160,11 +107,21 @@ export default function Recipes() {
                                 <div className="recipe-card-header">
                                     <h3 className="recipe-title">{recipe.title}</h3>
                                     <div onClick={(e) => e.preventDefault()} className="recipe-card-save">
-                                        <SaveButton recipeId={recipe.id} size="small" showLabel={false} />
+                                        <SaveButton 
+                                            recipeId={recipe.id} 
+                                            size="small" 
+                                            showLabel={false}
+                                            onSaveChange={(isSaved) => {
+                                                if (!isSaved) {
+                                                    handleRemoveSaved(recipe.id);
+                                                }
+                                            }}
+                                        />
                                     </div>
                                 </div>
                                 <p className="recipe-description">
-                                    {recipe.short_description}
+                                    {recipe.short_description?.substring(0, 100)}
+                                    {recipe.short_description?.length > 100 && '...'}
                                 </p>
                                 <div className="recipe-meta">
                                     <span className="meta-item">

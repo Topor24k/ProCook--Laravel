@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import RatingStars from '../components/RatingStars';
+import SaveButton from '../components/SaveButton';
+import CommentSection from '../components/CommentSection';
 import {
     IoTimeOutline,
     IoRestaurantOutline,
@@ -30,7 +33,8 @@ export default function RecipeDetail() {
     const fetchRecipe = async () => {
         try {
             const response = await api.get(`/recipes/${id}`);
-            setRecipe(response.data);
+            // Handle new API response format with success/data wrapper
+            setRecipe(response.data.data || response.data);
         } catch (error) {
             console.error('Error:', error);
         } finally {
@@ -96,6 +100,17 @@ export default function RecipeDetail() {
                     <span style={{ color: 'var(--dark)' }}>{recipe.title}</span>
                 </div>
 
+                {/* Recipe Image */}
+                {recipe.image && (
+                    <div className="recipe-detail-image-container">
+                        <img 
+                            src={`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/storage/${recipe.image}`} 
+                            alt={recipe.title}
+                            className="recipe-detail-image"
+                        />
+                    </div>
+                )}
+
                 {/* Recipe Header Card */}
                 <div className="recipe-header-card">
                     <div className="recipe-categories">
@@ -139,6 +154,14 @@ export default function RecipeDetail() {
                             <div className="stat-label">SERVINGS</div>
                             <div className="stat-value">{recipe.serving_size}</div>
                         </div>
+                    </div>
+
+                    {/* Rating and Save Section */}
+                    <div className="recipe-interactions">
+                        <div className="recipe-rating">
+                            <RatingStars recipeId={recipe.id} size="large" interactive={true} />
+                        </div>
+                        <SaveButton recipeId={recipe.id} size="large" showLabel={true} />
                     </div>
 
                     {user && recipe.user_id === user.id && (
@@ -199,6 +222,9 @@ export default function RecipeDetail() {
                     <h2 className="section-card-title">Preparation Instructions</h2>
                     <div className="preparation-content">{recipe.preparation_notes}</div>
                 </div>
+
+                {/* Comment Section */}
+                <CommentSection recipeId={recipe.id} />
 
                 {/* Back Link */}
                 <Link to="/recipes" className="back-link">
