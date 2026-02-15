@@ -57,7 +57,7 @@ Choose one of these options:
 3. Connect your GitHub repository (the Laravel project)
 4. Configure:
    - Name: `procook-api` (or your choice)
-   - Environment: `Docker`
+   - Environment: `Native`
    - Build Command: `chmod +x render-build.sh && ./render-build.sh`
    - Start Command: `php -S 0.0.0.0:$PORT -t public/`
 
