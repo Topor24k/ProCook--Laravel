@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useAuthGuard } from '../hooks/useAuthGuard';
+import AuthPrompt from '../components/AuthPrompt';
 import RatingStars from '../components/RatingStars';
 import SaveButton from '../components/SaveButton';
 import {
@@ -18,25 +20,67 @@ import {
 } from 'react-icons/io5';
 
 export default function Home() {
-    const [recipes, setRecipes] = useState([]);
+    const [allRecipes, setAllRecipes] = useState([]);
+    const [displayedRecipes, setDisplayedRecipes] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentIndex, setCurrentIndex] = useState(0);
     const { isAuthenticated } = useAuth();
+    const { requireAuth, showAuthPrompt, hideAuthPrompt } = useAuthGuard();
+    const navigate = useNavigate();
 
-    useEffect(() => {
-        fetchRecipes();
-    }, []);
-
-    const fetchRecipes = async () => {
+    // Fetch all recipes
+    const fetchRecipes = useCallback(async () => {
         try {
-            const response = await api.get('/recipes?limit=6');
-            // Handle new API response format with success/data wrapper
-            setRecipes(response.data.data || response.data);
+            const response = await api.get('/recipes');
+            const recipes = response.data.data || response.data;
+            setAllRecipes(recipes);
+            // Set initial 3 recipes
+            setDisplayedRecipes(recipes.slice(0, 3));
         } catch (error) {
             console.error('Error fetching recipes:', error);
         } finally {
             setLoading(false);
         }
+    }, []);
+
+    // Rotate recipes every 5 minutes (300,000 milliseconds)
+    const rotateRecipes = useCallback(() => {
+        if (allRecipes.length > 3) {
+            setCurrentIndex(prevIndex => {
+                const nextIndex = (prevIndex + 3) % allRecipes.length;
+                const nextRecipes = [];
+                
+                // Get 3 recipes starting from nextIndex, wrapping around if needed
+                for (let i = 0; i < 3; i++) {
+                    const recipeIndex = (nextIndex + i) % allRecipes.length;
+                    nextRecipes.push(allRecipes[recipeIndex]);
+                }
+                
+                setDisplayedRecipes(nextRecipes);
+                return nextIndex;
+            });
+        }
+    }, [allRecipes]);
+
+    const handleRecipeClick = (e, recipeId) => {
+        e.preventDefault();
+        requireAuth(
+            () => navigate(`/recipes/${recipeId}`),
+            "Please register or login to view full recipe details"
+        );
     };
+
+    useEffect(() => {
+        fetchRecipes();
+    }, [fetchRecipes]);
+
+    // Set up rotation interval
+    useEffect(() => {
+        if (allRecipes.length > 3) {
+            const interval = setInterval(rotateRecipes, 300000); // 5 minutes
+            return () => clearInterval(interval);
+        }
+    }, [rotateRecipes, allRecipes.length]);
 
     return (
         <div className="home-page">
@@ -62,10 +106,13 @@ export default function Home() {
                                 Create Recipe
                             </Link>
                         ) : (
-                            <Link to="/register" className="btn-hero-secondary">
+                            <button 
+                                onClick={() => requireAuth(null, "Join our community to share your culinary creations!")}
+                                className="btn-hero-secondary"
+                            >
                                 <IoPersonOutline style={{ fontSize: '1.3rem' }} />
-                                Join Now
-                            </Link>
+                                Share Your Recipe
+                            </button>
                         )}
                     </div>
                 </div>
@@ -115,7 +162,7 @@ export default function Home() {
                         <div className="spinner"></div>
                         <p>Loading delicious recipes...</p>
                     </div>
-                ) : recipes.length === 0 ? (
+                ) : allRecipes.length === 0 ? (
                     <div className="empty-state">
                         <div className="empty-state-icon">
                             <IoRestaurantOutline />
@@ -133,11 +180,12 @@ export default function Home() {
                     </div>
                 ) : (
                     <div className="recipes-grid">
-                        {recipes.map(recipe => (
-                            <Link 
-                                key={recipe.id} 
-                                to={`/recipes/${recipe.id}`} 
+                        {displayedRecipes.map(recipe => (
+                            <div 
+                                key={recipe.id}
                                 className="recipe-card"
+                                onClick={(e) => handleRecipeClick(e, recipe.id)}
+                                style={{ cursor: 'pointer' }}
                             >
                                 <div className="recipe-image">
                                     {recipe.image ? (
@@ -186,8 +234,17 @@ export default function Home() {
                                         </div>
                                     </div>
                                 </div>
-                            </Link>
+                            </div>
                         ))}
+                    </div>
+                )}
+                
+                {/* Show rotation indicator if there are more than 3 recipes */}
+                {allRecipes.length > 3 && (
+                    <div className="recipes-rotation-info">
+                        <p style={{ textAlign: 'center', color: 'var(--gray-600)', margin: '1rem 0' }}>
+                            Showing 3 of {allRecipes.length} recipes • Recipes rotate every 5 minutes
+                        </p>
                     </div>
                 )}
             </section>
@@ -196,7 +253,6 @@ export default function Home() {
             {!isAuthenticated && (
                 <section className="cta-section">
                     <div className="cta-content">
-                        <IoLockClosedOutline style={{ fontSize: '4rem', marginBottom: '1.5rem' }} />
                         <h2 className="cta-title">Ready to Start Cooking?</h2>
                         <p className="cta-description">
                             Join our community today and share your culinary masterpieces
@@ -208,6 +264,12 @@ export default function Home() {
                     </div>
                 </section>
             )}
+            
+            {/* Auth Prompt Modal */}
+            <AuthPrompt 
+                isOpen={showAuthPrompt}
+                onClose={hideAuthPrompt}
+            />
         </div>
     );
 }
