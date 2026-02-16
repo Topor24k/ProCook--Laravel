@@ -2982,3 +2982,142 @@ a:hover {
         width: 100%;
     }
 }
+
+/* ===========================
+   AUTH PROMPT MODAL
+   =========================== */
+
+.auth-prompt-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+    animation: fadeIn var(--transition-fast) ease-out;
+}
+
+.auth-prompt-modal {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: var(--space-2xl);
+    width: 90%;
+    max-width: 480px;
+    position: relative;
+    box-shadow: var(--shadow-xl);
+    animation: slideUp var(--transition-base) ease-out;
+}
+
+.auth-prompt-close {
+    position: absolute;
+    top: var(--space-lg);
+    right: var(--space-lg);
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--gray-500);
+    cursor: pointer;
+    padding: var(--space-sm);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-prompt-close:hover {
+    color: var(--gray-800);
+    background: var(--gray-100);
+}
+
+.auth-prompt-content {
+    text-align: center;
+}
+
+.auth-prompt-icon {
+    display: flex;
+    justify-content: center;
+    margin-bottom: var(--space-lg);
+}
+
+.auth-prompt-icon svg {
+    font-size: 4rem;
+    color: var(--primary);
+}
+
+.auth-prompt-title {
+    font-size: 2rem;
+    color: var(--dark);
+    margin-bottom: var(--space-md);
+    font-weight: 700;
+}
+
+.auth-prompt-message {
+    font-size: 1.1rem;
+    color: var(--gray-700);
+    margin-bottom: var(--space-2xl);
+    line-height: 1.5;
+}
+
+.auth-prompt-actions {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    justify-content: center;
+    flex-wrap: nowrap;
+    align-items: center;
+}
+
+.auth-prompt-actions .btn-primary,
+.auth-prompt-actions .btn-secondary {
+    /* Use default button styles - no overrides needed */
+}
+
+.auth-prompt-note {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    margin-bottom: 0;
+    line-height: 1.4;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mobile responsiveness for auth prompt */
+@media (max-width: 768px) {
+    .auth-prompt-modal {
+        margin: var(--space-lg);
+        padding: var(--space-xl) var(--space-lg);
+    }
+
+    .auth-prompt-actions {
+        flex-direction: column;
+    }
+
+    .auth-prompt-actions .btn-primary,
+    .auth-prompt-actions .btn-secondary {
+        width: 100%;
+    }
+}
