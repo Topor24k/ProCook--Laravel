@@ -15,34 +15,69 @@ import Register from './pages/Register';
 import AboutUs from './pages/AboutUs';
 import './index.css';
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error, errorInfo) {
+        console.error('React Error Boundary caught an error:', error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div style={{ padding: '20px', textAlign: 'center' }}>
+                    <h2>Something went wrong!</h2>
+                    <p>Error: {this.state.error?.message}</p>
+                    <button onClick={() => window.location.reload()}>Reload Page</button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
 function App() {
+    console.log('App component is rendering...');
+    
     return (
-        <AuthProvider>
-            <BrowserRouter>
-                <Routes>
-                    <Route path="/" element={<Layout />}>
-                        <Route index element={<Home />} />
-                        
-                        {/* Recipe Routes */}
-                        <Route path="recipes" element={<Recipes />} />
-                        <Route path="recipes/create" element={<RecipeCreate />} />
-                        <Route path="recipes/my-recipes" element={<MyRecipes />} />
-                        <Route path="recipes/saved" element={<SavedRecipes />} />
-                        <Route path="recipes/:id" element={<RecipeDetail />} />
-                        <Route path="recipes/:id/edit" element={<RecipeEdit />} />
-                        
-                        {/* Auth Routes */}
-                        <Route path="login" element={<Login />} />
-                        <Route path="register" element={<Register />} />
-                        
-                        {/* Info Routes */}
-                        <Route path="about" element={<AboutUs />} />
-                    </Route>
-                </Routes>
-            </BrowserRouter>
-        </AuthProvider>
+        <ErrorBoundary>
+            <AuthProvider>
+                <BrowserRouter>
+                    <Routes>
+                        <Route path="/" element={<Layout />}>
+                            <Route index element={<Home />} />
+                            
+                            {/* Recipe Routes */}
+                            <Route path="recipes" element={<Recipes />} />
+                            <Route path="recipes/create" element={<RecipeCreate />} />
+                            <Route path="recipes/my-recipes" element={<MyRecipes />} />
+                            <Route path="recipes/saved" element={<SavedRecipes />} />
+                            <Route path="recipes/:id" element={<RecipeDetail />} />
+                            <Route path="recipes/:id/edit" element={<RecipeEdit />} />
+                            
+                            {/* Auth Routes */}
+                            <Route path="login" element={<Login />} />
+                            <Route path="register" element={<Register />} />
+                            
+                            {/* Info Routes */}
+                            <Route path="about" element={<AboutUs />} />
+                        </Route>
+                    </Routes>
+                </BrowserRouter>
+            </AuthProvider>
+        </ErrorBoundary>
     );
 }
+
+console.log('About to mount React app...');
 
 ReactDOM.createRoot(document.getElementById('app')).render(
     <React.StrictMode>
