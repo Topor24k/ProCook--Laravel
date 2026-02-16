@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { useAuthGuard } from '../hooks/useAuthGuard';
+import AuthPrompt from '../components/AuthPrompt';
 import RatingStars from '../components/RatingStars';
 import SaveButton from '../components/SaveButton';
 import {
@@ -18,6 +21,9 @@ export default function Recipes() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCuisine, setFilterCuisine] = useState('');
+    const { isAuthenticated } = useAuth();
+    const { requireAuth, showAuthPrompt, hideAuthPrompt } = useAuthGuard();
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchRecipes();
@@ -32,6 +38,22 @@ export default function Recipes() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleRecipeClick = (e, recipeId) => {
+        e.preventDefault();
+        requireAuth(
+            () => navigate(`/recipes/${recipeId}`),
+            "Please register or login to view full recipe details"
+        );
+    };
+
+    const handleShareRecipeClick = (e) => {
+        e.preventDefault();
+        requireAuth(
+            () => navigate('/recipes/create'),
+            "Join our community to share your culinary creations!"
+        );
     };
 
     const cuisineTypes = [...new Set(recipes.map(r => r.cuisine_type))].filter(Boolean);
@@ -65,10 +87,21 @@ export default function Recipes() {
                 <p className="page-subtitle">
                     Discover delicious recipes from our community of passionate cooks
                 </p>
-                <Link to="/recipes/create" className="btn-primary" style={{ marginTop: '1.5rem' }}>
-                    <IoAddCircleOutline style={{ fontSize: '1.3rem' }} />
-                    Share Your Recipe
-                </Link>
+                {isAuthenticated ? (
+                    <Link to="/recipes/create" className="btn-primary" style={{ marginTop: '1.5rem' }}>
+                        <IoAddCircleOutline style={{ fontSize: '1.3rem' }} />
+                        Share Your Recipe
+                    </Link>
+                ) : (
+                    <button 
+                        onClick={handleShareRecipeClick}
+                        className="btn-primary" 
+                        style={{ marginTop: '1.5rem' }}
+                    >
+                        <IoAddCircleOutline style={{ fontSize: '1.3rem' }} />
+                        Share Your Recipe
+                    </button>
+                )}
             </div>
 
             {/* Search & Filter Bar */}
@@ -135,10 +168,11 @@ export default function Recipes() {
             ) : (
                 <div className="recipes-grid">
                     {filteredRecipes.map(recipe => (
-                        <Link 
-                            key={recipe.id} 
-                            to={`/recipes/${recipe.id}`} 
+                        <div 
+                            key={recipe.id}
                             className="recipe-card"
+                            onClick={(e) => handleRecipeClick(e, recipe.id)}
+                            style={{ cursor: 'pointer' }}
                         >
                             <div className="recipe-image">
                                 {recipe.image ? (
@@ -186,10 +220,16 @@ export default function Recipes() {
                                     </div>
                                 </div>
                             </div>
-                        </Link>
+                        </div>
                     ))}
                 </div>
             )}
+            
+            {/* Auth Prompt Modal */}
+            <AuthPrompt 
+                isOpen={showAuthPrompt}
+                onClose={hideAuthPrompt}
+            />
         </div>
     );
 }
