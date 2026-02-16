@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useAuthGuard } from '../hooks/useAuthGuard';
+import AuthPrompt from '../components/AuthPrompt';
 import api from '../services/api';
 import RatingStars from '../components/RatingStars';
 import SaveButton from '../components/SaveButton';
@@ -16,19 +18,30 @@ import {
     IoCheckmarkCircleOutline,
     IoWarningOutline,
     IoInformationCircleOutline,
-    IoChevronForwardOutline
+    IoChevronForwardOutline,
+    IoLockClosedOutline,
+    IoPersonAddOutline,
+    IoLogInOutline
 } from 'react-icons/io5';
 
 export default function RecipeDetail() {
     const { id } = useParams();
-    const { user } = useAuth();
+    const { user, isAuthenticated } = useAuth();
+    const { requireAuth, showAuthPrompt, hideAuthPrompt } = useAuthGuard();
     const navigate = useNavigate();
     const [recipe, setRecipe] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [showAuthRequired, setShowAuthRequired] = useState(false);
 
     useEffect(() => {
+        // Check authentication first
+        if (!isAuthenticated) {
+            setShowAuthRequired(true);
+            setLoading(false);
+            return;
+        }
         fetchRecipe();
-    }, [id]);
+    }, [id, isAuthenticated]);
 
     const fetchRecipe = async () => {
         try {
@@ -61,6 +74,51 @@ export default function RecipeDetail() {
                         <div className="spinner"></div>
                         <p>Loading recipe...</p>
                     </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Show authentication required message for unauthenticated users
+    if (showAuthRequired) {
+        return (
+            <div className="recipe-detail-page">
+                <div className="recipe-detail-container">
+                    <div className="auth-required-state" style={{ 
+                        textAlign: 'center', 
+                        padding: '4rem 2rem',
+                        background: 'var(--white)',
+                        borderRadius: 'var(--radius-lg)',
+                        boxShadow: 'var(--shadow-md)',
+                        margin: '2rem 0'
+                    }}>
+                        <div style={{ marginBottom: '2rem' }}>
+                            <IoLockClosedOutline style={{ fontSize: '4rem', color: 'var(--primary)' }} />
+                        </div>
+                        <h2 style={{ color: 'var(--dark)', marginBottom: '1rem' }}>Authentication Required</h2>
+                        <p style={{ color: 'var(--gray-700)', marginBottom: '2rem', fontSize: '1.1rem' }}>
+                            Please register or login to view detailed recipe information.
+                        </p>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                            <Link to="/register" className="btn-primary">
+                                <IoPersonAddOutline style={{ fontSize: '1.2rem' }} />
+                                Register Now
+                            </Link>
+                            <Link to="/login" className="btn-secondary">
+                                <IoLogInOutline style={{ fontSize: '1.2rem' }} />
+                                Login
+                            </Link>
+                        </div>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--gray-600)', marginTop: '2rem' }}>
+                            Join our community to access all features and share your culinary creations!
+                        </p>
+                    </div>
+                    
+                    {/* Auth Prompt Modal */}
+                    <AuthPrompt 
+                        isOpen={showAuthPrompt}
+                        onClose={hideAuthPrompt}
+                    />
                 </div>
             </div>
         );
@@ -231,6 +289,12 @@ export default function RecipeDetail() {
                     <IoArrowBackOutline style={{ fontSize: '1.2rem' }} />
                     Back to All Recipes
                 </Link>
+                
+                {/* Auth Prompt Modal */}
+                <AuthPrompt 
+                    isOpen={showAuthPrompt}
+                    onClose={hideAuthPrompt}
+                />
             </div>
         </div>
     );
