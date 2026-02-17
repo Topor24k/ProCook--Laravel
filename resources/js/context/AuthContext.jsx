@@ -51,12 +51,18 @@ export function AuthProvider({ children }) {
         setUser(null);
     };
 
+    // Force-clear user state (used after server-side account deletion)
+    const clearUser = () => {
+        setUser(null);
+    };
+
     const value = {
         user,
         loading,
         login,
         register,
         logout,
+        clearUser,
         isAuthenticated: !!user,
     };
 
