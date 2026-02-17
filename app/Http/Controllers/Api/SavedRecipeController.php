@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Recipe;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class SavedRecipeController extends Controller
 {
@@ -86,20 +87,20 @@ class SavedRecipeController extends Controller
         try {
             $recipe = Recipe::findOrFail($recipeId);
 
-            // Check if already saved
-            $alreadySaved = Auth::user()
-                ->savedRecipes()
-                ->where('recipe_id', $recipeId)
-                ->exists();
-
-            if ($alreadySaved) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Recipe already saved.'
-                ], 409);
+            // Atomic save: use DB unique constraint to prevent duplicate saves
+            // instead of a check-then-act pattern (TOCTOU race condition)
+            try {
+                Auth::user()->savedRecipes()->attach($recipeId);
+            } catch (\Illuminate\Database\QueryException $e) {
+                // Unique constraint violation = already saved
+                if ($e->errorInfo[1] == 1062 || str_contains($e->getMessage(), 'Duplicate entry') || str_contains($e->getMessage(), 'UNIQUE constraint failed')) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Recipe already saved.'
+                    ], 409);
+                }
+                throw $e;
             }
-
-            Auth::user()->savedRecipes()->attach($recipeId);
 
             return response()->json([
                 'success' => true,
@@ -182,20 +183,26 @@ class SavedRecipeController extends Controller
         try {
             $recipe = Recipe::findOrFail($recipeId);
 
-            $isSaved = Auth::user()
-                ->savedRecipes()
-                ->where('recipe_id', $recipeId)
-                ->exists();
+            // Transaction + lock to prevent TOCTOU race condition on toggle
+            $result = DB::transaction(function () use ($recipeId) {
+                // Lock the user's saved_recipes rows for this recipe to prevent concurrent toggles
+                $isSaved = DB::table('saved_recipes')
+                    ->where('user_id', Auth::id())
+                    ->where('recipe_id', $recipeId)
+                    ->lockForUpdate()
+                    ->exists();
 
-            if ($isSaved) {
-                Auth::user()->savedRecipes()->detach($recipeId);
-                $message = 'Recipe unsaved successfully.';
-                $newStatus = false;
-            } else {
-                Auth::user()->savedRecipes()->attach($recipeId);
-                $message = 'Recipe saved successfully.';
-                $newStatus = true;
-            }
+                if ($isSaved) {
+                    Auth::user()->savedRecipes()->detach($recipeId);
+                    return ['message' => 'Recipe unsaved successfully.', 'status' => false];
+                } else {
+                    Auth::user()->savedRecipes()->attach($recipeId);
+                    return ['message' => 'Recipe saved successfully.', 'status' => true];
+                }
+            });
+
+            $message = $result['message'];
+            $newStatus = $result['status'];
 
             return response()->json([
                 'success' => true,
