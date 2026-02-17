@@ -13,6 +13,7 @@ import SavedRecipes from './pages/SavedRecipes';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AboutUs from './pages/AboutUs';
+import Profile from './pages/Profile';
 import './index.css';
 
 // Error Boundary Component
@@ -66,6 +67,7 @@ function App() {
                             {/* Auth Routes */}
                             <Route path="login" element={<Login />} />
                             <Route path="register" element={<Register />} />
+                            <Route path="profile" element={<Profile />} />
                             
                             {/* Info Routes */}
                             <Route path="about" element={<AboutUs />} />
