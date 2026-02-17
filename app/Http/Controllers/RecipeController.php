@@ -6,6 +6,7 @@ use App\Models\Recipe;
 use App\Models\Ingredient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class RecipeController extends Controller
 {
@@ -59,19 +60,24 @@ class RecipeController extends Controller
         $validated['total_time'] = $validated['prep_time'] + $validated['cook_time'];
         $validated['user_id'] = Auth::id();
 
-        // Create recipe
-        $recipe = Recipe::create($validated);
+        // Transaction: create recipe + ingredients atomically to prevent partial data
+        $recipe = DB::transaction(function () use ($validated, $request) {
+            // Create recipe
+            $recipe = Recipe::create($validated);
 
-        // Create ingredients
-        foreach ($request->ingredients as $index => $ingredientData) {
-            $recipe->ingredients()->create([
-                'name' => $ingredientData['name'],
-                'measurement' => $ingredientData['measurement'],
-                'substitution_option' => $ingredientData['substitution_option'] ?? null,
-                'allergen_info' => $ingredientData['allergen_info'] ?? null,
-                'order' => $index + 1,
-            ]);
-        }
+            // Create ingredients
+            foreach ($request->ingredients as $index => $ingredientData) {
+                $recipe->ingredients()->create([
+                    'name' => $ingredientData['name'],
+                    'measurement' => $ingredientData['measurement'],
+                    'substitution_option' => $ingredientData['substitution_option'] ?? null,
+                    'allergen_info' => $ingredientData['allergen_info'] ?? null,
+                    'order' => $index + 1,
+                ]);
+            }
+
+            return $recipe;
+        });
 
         return redirect()->route('recipes.show', $recipe)
             ->with('success', 'Recipe created successfully!');
@@ -122,20 +128,24 @@ class RecipeController extends Controller
         // Calculate total time
         $validated['total_time'] = $validated['prep_time'] + $validated['cook_time'];
 
-        // Update recipe
-        $recipe->update($validated);
+        // Transaction: update recipe + replace ingredients atomically
+        // Prevents data loss if failure occurs after deleting old ingredients
+        DB::transaction(function () use ($recipe, $validated, $request) {
+            // Update recipe
+            $recipe->update($validated);
 
-        // Delete old ingredients and create new ones
-        $recipe->ingredients()->delete();
-        foreach ($request->ingredients as $index => $ingredientData) {
-            $recipe->ingredients()->create([
-                'name' => $ingredientData['name'],
-                'measurement' => $ingredientData['measurement'],
-                'substitution_option' => $ingredientData['substitution_option'] ?? null,
-                'allergen_info' => $ingredientData['allergen_info'] ?? null,
-                'order' => $index + 1,
-            ]);
-        }
+            // Delete old ingredients and create new ones
+            $recipe->ingredients()->delete();
+            foreach ($request->ingredients as $index => $ingredientData) {
+                $recipe->ingredients()->create([
+                    'name' => $ingredientData['name'],
+                    'measurement' => $ingredientData['measurement'],
+                    'substitution_option' => $ingredientData['substitution_option'] ?? null,
+                    'allergen_info' => $ingredientData['allergen_info'] ?? null,
+                    'order' => $index + 1,
+                ]);
+            }
+        });
 
         return redirect()->route('recipes.show', $recipe)
             ->with('success', 'Recipe updated successfully!');
