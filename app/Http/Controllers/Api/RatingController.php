@@ -7,6 +7,7 @@ use App\Models\Rating;
 use App\Models\Recipe;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class RatingController extends Controller
@@ -39,28 +40,34 @@ class RatingController extends Controller
                 ], 422);
             }
 
-            // Update or create rating
-            $rating = Rating::updateOrCreate(
-                [
-                    'recipe_id' => $recipeId,
-                    'user_id' => Auth::id()
-                ],
-                [
-                    'rating' => $request->rating
-                ]
-            );
+            // Transaction: update/create rating + fetch stats atomically
+            // Ensures returned average & count reflect the submitted rating consistently
+            $result = DB::transaction(function () use ($recipeId, $request) {
+                // Update or create rating (unique constraint on recipe_id + user_id prevents duplicates)
+                $rating = Rating::updateOrCreate(
+                    [
+                        'recipe_id' => $recipeId,
+                        'user_id' => Auth::id()
+                    ],
+                    [
+                        'rating' => $request->rating
+                    ]
+                );
 
-            // Get updated recipe stats
-            $averageRating = $recipe->ratings()->avg('rating');
-            $ratingsCount = $recipe->ratings()->count();
+                // Get updated recipe stats within the same transaction for consistency
+                $averageRating = Rating::where('recipe_id', $recipeId)->avg('rating');
+                $ratingsCount = Rating::where('recipe_id', $recipeId)->count();
+
+                return compact('rating', 'averageRating', 'ratingsCount');
+            });
 
             return response()->json([
                 'success' => true,
                 'message' => 'Rating submitted successfully.',
                 'data' => [
-                    'rating' => $rating,
-                    'averageRating' => round($averageRating, 1),
-                    'ratingsCount' => $ratingsCount
+                    'rating' => $result['rating'],
+                    'averageRating' => round($result['averageRating'], 1),
+                    'ratingsCount' => $result['ratingsCount']
                 ]
             ]);
 
