@@ -104,6 +104,9 @@ export default function Layout() {
                                 </button>
                                 {userDropdownOpen && (
                                     <div className="dropdown-menu user-menu-dropdown">
+                                        <Link to="/profile" className="dropdown-item" onClick={() => setUserDropdownOpen(false)}>
+                                            <IoPersonOutline /> My Profile
+                                        </Link>
                                         <Link to="/recipes/my-recipes" className="dropdown-item" onClick={() => setUserDropdownOpen(false)}>
                                             <IoHeartOutline /> My Recipes
                                         </Link>
