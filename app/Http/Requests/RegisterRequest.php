@@ -6,6 +6,14 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
+/**
+ * PHPDoc annotation for IDE support
+ * Documents validated request properties for static analysis
+ * 
+ * @property string $name User's full name from validated request data
+ * @property string $email User's email address from validated request data
+ * @property string $password User's password from validated request data
+ */
 class RegisterRequest extends FormRequest
 {
     /**
