@@ -2,19 +2,24 @@
 
 namespace App\Http\Controllers\Api;
 
+// Import statements for controller dependencies
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreRecipeRequest;
 use App\Models\Recipe;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
+// Controller handles recipe CRUD operations
 class RecipeController extends Controller
 {
+    // OOP: Public method lists recipes. CRUD: READ operation gets all recipes with relationships.
     public function index(Request $request)
     {
         try {
+            // Eager load user, ratings count, and average rating
             $query = Recipe::with('user')
                 ->withCount('ratings')
                 ->withAvg('ratings', 'rating');
@@ -27,23 +32,23 @@ class RecipeController extends Controller
 
             $recipes = $query->latest()->get();
 
-            // Format the ratings data
+            // Format ratings data for cleaner response
             $recipes = $recipes->map(function ($recipe) {
                 $recipe->average_rating = round($recipe->ratings_avg_rating ?? 0, 1);
                 $recipe->ratings_count = $recipe->ratings_count ?? 0;
                 unset($recipe->ratings_avg_rating);
                 return $recipe;
             });
-
-            return response()->json([
+return response()->json([
                 'success' => true,
                 'data' => $recipes,
                 'count' => $recipes->count()
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error fetching recipes', ['error' => $e->getMessage()]);
+            Log::error('Error fetching recipes', ['error' => $e->getMessage()]);
 
+            // Returns JSON error response with HTTP 500 Internal Server Error status
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch recipes.'
@@ -51,15 +56,17 @@ class RecipeController extends Controller
         }
     }
 
+    // OOP: Public method retrieves recipe. CRUD: READ operation gets single recipe with relationships.
     public function show($id)
     {
         try {
+            // Find recipe with eager-loaded relationships
             $recipe = Recipe::with(['user', 'ingredients'])
                 ->withCount('ratings')
                 ->withAvg('ratings', 'rating')
                 ->findOrFail($id);
 
-            // Format the ratings data
+            // Format ratings data
             $recipe->average_rating = round($recipe->ratings_avg_rating ?? 0, 1);
             $recipe->ratings_count = $recipe->ratings_count ?? 0;
             unset($recipe->ratings_avg_rating);
@@ -76,11 +83,12 @@ class RecipeController extends Controller
             ], 404);
 
         } catch (\Exception $e) {
-            \Log::error('Error fetching recipe', [
+            Log::error('Error fetching recipe', [
                 'recipe_id' => $id,
                 'error' => $e->getMessage()
             ]);
 
+            // Returns generic error response with HTTP 500 status
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch recipe details.'
@@ -88,6 +96,7 @@ class RecipeController extends Controller
         }
     }
 
+    // OOP: Public method creates recipe using transaction. CRUD: CREATE operation inserts recipe with ingredients.
     public function store(StoreRecipeRequest $request)
     {
         try {
@@ -103,13 +112,14 @@ class RecipeController extends Controller
                 $validated['image'] = $imagePath;
             }
 
-            // Calculate total time
+            // Calculate total time and set user_id
             $validated['total_time'] = $validated['prep_time'] + $validated['cook_time'];
             $validated['user_id'] = Auth::id();
 
+            // Create recipe
             $recipe = Recipe::create($validated);
 
-            // Create ingredients
+            // Create ingredients if provided
             if (isset($validated['ingredients'])) {
                 foreach ($validated['ingredients'] as $ingredient) {
                     $recipe->ingredients()->create($ingredient);
@@ -127,7 +137,7 @@ class RecipeController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            \Log::error('Error creating recipe', [
+            Log::error('Error creating recipe', [
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage()
             ]);
@@ -140,12 +150,13 @@ class RecipeController extends Controller
         }
     }
 
+    // OOP: Public method updates recipe using transaction. CRUD: UPDATE operation modifies recipe with authorization.
     public function update(StoreRecipeRequest $request, $id)
     {
         try {
             $recipe = Recipe::findOrFail($id);
 
-            // Check if user owns the recipe
+            // Verify user owns the recipe
             if ($recipe->user_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
@@ -157,9 +168,8 @@ class RecipeController extends Controller
 
             $validated = $request->validated();
 
-            // Handle image upload
+            // Handle image upload and delete old image
             if ($request->hasFile('image')) {
-                // Delete old image if exists
                 if ($recipe->image && Storage::disk('public')->exists($recipe->image)) {
                     Storage::disk('public')->delete($recipe->image);
                 }
@@ -173,6 +183,7 @@ class RecipeController extends Controller
             // Calculate total time
             $validated['total_time'] = $validated['prep_time'] + $validated['cook_time'];
 
+            // Update recipe
             $recipe->update($validated);
 
             // Update ingredients - delete old ones and create new ones
@@ -202,7 +213,7 @@ class RecipeController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            \Log::error('Error updating recipe', [
+            Log::error('Error updating recipe', [
                 'recipe_id' => $id,
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage()
@@ -216,12 +227,13 @@ class RecipeController extends Controller
         }
     }
 
+    // OOP: Public method deletes recipe with authorization. CRUD: DELETE operation removes recipe and associated files.
     public function destroy($id)
     {
         try {
             $recipe = Recipe::findOrFail($id);
 
-            // Check if user owns the recipe
+            // Verify user owns the recipe
             if ($recipe->user_id !== Auth::id()) {
                 return response()->json([
                     'success' => false,
@@ -229,11 +241,12 @@ class RecipeController extends Controller
                 ], 403);
             }
 
-            // Delete recipe image if exists
+            // Delete recipe image file if exists
             if ($recipe->image && Storage::disk('public')->exists($recipe->image)) {
                 Storage::disk('public')->delete($recipe->image);
             }
 
+            // Delete recipe (cascades to ingredients, comments, ratings)
             $recipe->delete();
 
             return response()->json([
@@ -248,7 +261,7 @@ class RecipeController extends Controller
             ], 404);
 
         } catch (\Exception $e) {
-            \Log::error('Error deleting recipe', [
+            Log::error('Error deleting recipe', [
                 'recipe_id' => $id,
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage()
@@ -261,9 +274,11 @@ class RecipeController extends Controller
         }
     }
 
+    // OOP: Public method retrieves user's recipes. CRUD: READ operation gets authenticated user's recipes.
     public function myRecipes()
     {
         try {
+            // Get recipes created by current user
             $recipes = Recipe::where('user_id', Auth::id())
                 ->with('ingredients')
                 ->latest()
@@ -276,7 +291,7 @@ class RecipeController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error fetching user recipes', [
+            Log::error('Error fetching user recipes', [
                 'user_id' => Auth::id(),
                 'error' => $e->getMessage()
             ]);
