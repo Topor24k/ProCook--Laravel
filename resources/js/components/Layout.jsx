@@ -148,21 +148,9 @@ export default function Layout() {
                 <div className="footer-content">
                     <div className="footer-section">
                         <h3>
-                            <IoRestaurantOutline style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }} />
                             ProCook
                         </h3>
                         <p>Discover, create, and share amazing recipes with food lovers worldwide. Join our community of passionate cooks and culinary enthusiasts.</p>
-                        <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-                            <a href="#" style={{ fontSize: '1.5rem', display: 'inline' }}>
-                                <IoLogoFacebook />
-                            </a>
-                            <a href="#" style={{ fontSize: '1.5rem', display: 'inline' }}>
-                                <IoLogoTwitter />
-                            </a>
-                            <a href="#" style={{ fontSize: '1.5rem', display: 'inline' }}>
-                                <IoLogoInstagram />
-                            </a>
-                        </div>
                     </div>
                     <div className="footer-section">
                         <h4>Quick Links</h4>
@@ -208,13 +196,13 @@ export default function Layout() {
                                 cursor: 'pointer',
                                 fontWeight: '600'
                             }}>
-                                <IoMailOutline style={{ fontSize: '1.2rem' }} />
+                                Subscribe
                             </button>
                         </div>
                     </div>
                 </div>
                 <div className="footer-bottom">
-                    <p>&copy; 2026 ProCook. All rights reserved. Made with <IoHeartOutline style={{ display: 'inline', verticalAlign: 'middle', color: 'var(--primary)' }} /> for food lovers.</p>
+                    <p>&copy; 2026 ProCook. All rights reserved. Made with love for food lovers.</p>
                 </div>
             </footer>
         </div>

@@ -1,14 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { 
-    IoPersonOutline, 
-    IoMailOutline, 
-    IoLockClosedOutline, 
-    IoPersonAddOutline,
-    IoRestaurantOutline,
-    IoCheckmarkCircleOutline
-} from 'react-icons/io5';
 
 export default function Register() {
     const { register } = useAuth();
@@ -48,14 +40,12 @@ export default function Register() {
         <div className="form-page">
             <div className="form-container">
                 <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-                    <IoRestaurantOutline style={{ fontSize: '4rem', color: 'var(--primary)', marginBottom: '1rem' }} />
                     <h1 className="form-title">Join ProCook</h1>
                     <p className="form-subtitle">Create your account and start cooking</p>
                 </div>
 
                 {success && (
                     <div className="success-message">
-                        <IoCheckmarkCircleOutline style={{ fontSize: '1.5rem', marginRight: '0.5rem' }} />
                         <div>
                             <strong>Account Created Successfully!</strong>
                             <p style={{ marginTop: '0.25rem', fontSize: '0.9rem' }}>Welcome to ProCook! Redirecting you to home...</p>
@@ -66,7 +56,6 @@ export default function Register() {
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
                         <label className="form-label">
-                            <IoPersonOutline style={{ fontSize: '1.1rem', marginRight: '0.5rem', verticalAlign: 'middle' }} />
                             Full Name
                         </label>
                         <input
@@ -82,7 +71,6 @@ export default function Register() {
 
                     <div className="form-group">
                         <label className="form-label">
-                            <IoMailOutline style={{ fontSize: '1.1rem', marginRight: '0.5rem', verticalAlign: 'middle' }} />
                             Email Address
                         </label>
                         <input
@@ -98,7 +86,6 @@ export default function Register() {
 
                     <div className="form-group">
                         <label className="form-label">
-                            <IoLockClosedOutline style={{ fontSize: '1.1rem', marginRight: '0.5rem', verticalAlign: 'middle' }} />
                             Password
                         </label>
                         <input
@@ -114,7 +101,6 @@ export default function Register() {
 
                     <div className="form-group">
                         <label className="form-label">
-                            <IoLockClosedOutline style={{ fontSize: '1.1rem', marginRight: '0.5rem', verticalAlign: 'middle' }} />
                             Confirm Password
                         </label>
                         <input
@@ -128,7 +114,6 @@ export default function Register() {
                     </div>
 
                     <button type="submit" className="form-button" disabled={loading}>
-                        <IoPersonAddOutline style={{ fontSize: '1.3rem' }} />
                         {loading ? 'Creating Account...' : 'Create Account'}
                     </button>
                 </form>

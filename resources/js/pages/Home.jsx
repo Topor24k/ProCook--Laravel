@@ -149,7 +149,6 @@ export default function Home() {
             <section className="latest-recipes-section">
                 <div className="section-header">
                     <h2 className="section-title">
-                        <IoTrendingUpOutline style={{ fontSize: '2.5rem', marginRight: '0.5rem', verticalAlign: 'middle', color: 'var(--primary)' }} />
                         Latest Recipes
                     </h2>
                     <Link to="/recipes" className="view-all-link">

@@ -52,7 +52,6 @@ export default function MyRecipes() {
         <div className="recipes-page container">
             <div className="page-header">
                 <h1 className="page-title">
-                    <IoHeartOutline style={{ fontSize: '3rem', marginRight: '1rem', verticalAlign: 'middle', color: 'var(--primary)' }} />
                     My Recipes
                 </h1>
                 <p className="page-subtitle">
